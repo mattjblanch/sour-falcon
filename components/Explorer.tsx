@@ -1,5 +1,8 @@
-import React from 'react';
+"use client";
+
+import React, { useState } from 'react';
 import JsonTree from './JsonTree';
+import Graph, { GraphOp } from './Graph';
 
 type Data =
   | { kind: 'openapi'; sourceUrl?: string; info?: any; paths?: Record<string, any>; components?: any }
@@ -7,48 +10,89 @@ type Data =
   | { kind: 'unknown'; note: string };
 
 export default function Explorer({ data }: { data: Data }) {
-  if ((data as any).kind === 'openapi') {
+  const [showGraph, setShowGraph] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
+
+  if ((data as any).kind === "openapi") {
     const d = data as any;
     const paths = d.paths || {};
     const pathEntries = Object.entries(paths as Record<string, any>);
+    const ops: GraphOp[] = pathEntries.flatMap(([path, byMethod]) =>
+      Object.entries(byMethod as Record<string, any>).map(([method, op]) => ({
+        id: `${method.toUpperCase()} ${path}`,
+        label: `${method.toUpperCase()} ${path}`,
+        cluster: op.tags?.[0] || path.split("/")[1] || "root",
+      }))
+    );
+    const endpointCount = ops.length;
+
+    function handleSelect(id: string) {
+      setSelected(id);
+      const el = document.getElementById(`op-${id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+
     return (
       <div>
-        <p className="small">Detected <b>OpenAPI</b>{d.sourceUrl ? ` at ${d.sourceUrl}`:''}</p>
+        <p className="small">
+          Detected <b>OpenAPI</b>
+          {d.sourceUrl ? ` at ${d.sourceUrl}` : ""}
+        </p>
+        {endpointCount >= 10 && (
+          <p>
+            <button onClick={() => setShowGraph((v) => !v)}>
+              {showGraph ? "Hide" : "Show"} Graph
+            </button>
+          </p>
+        )}
+        {showGraph && <Graph ops={ops} onSelect={handleSelect} />}
         <h3>Endpoints ({pathEntries.length})</h3>
         <ul>
           {pathEntries.map(([path, byMethod]) => (
             <li key={path}>
               <details>
-                <summary><code>{path}</code></summary>
+                <summary>
+                  <code>{path}</code>
+                </summary>
                 <ul>
-                  {Object.entries(byMethod as Record<string, any>).map(([method, op]) => (
-                    <li key={method}>
-                      <details>
-                        <summary>
-                          <code>{method.toUpperCase()}</code>{op.summary ? ` ${op.summary}` : ''}
-                        </summary>
-                        {op.description && <p className="small">{op.description}</p>}
-                        {op.parameters && (
-                          <section>
-                            <h4>Parameters</h4>
-                            <JsonTree data={op.parameters} />
-                          </section>
-                        )}
-                        {op.requestBody && (
-                          <section>
-                            <h4>Request Body</h4>
-                            <JsonTree data={op.requestBody} />
-                          </section>
-                        )}
-                        {op.responses && (
-                          <section>
-                            <h4>Responses</h4>
-                            <JsonTree data={op.responses} />
-                          </section>
-                        )}
-                      </details>
-                    </li>
-                  ))}
+                  {Object.entries(byMethod as Record<string, any>).map(([method, op]) => {
+                    const opId = `${method.toUpperCase()} ${path}`;
+                    return (
+                      <li
+                        key={method}
+                        id={`op-${opId}`}
+                        style={{ background: selected === opId ? "#fffae5" : undefined }}
+                      >
+                        <details open={selected === opId}>
+                          <summary>
+                            <code>{method.toUpperCase()}</code>
+                            {op.summary ? ` ${op.summary}` : ""}
+                          </summary>
+                          {op.description && <p className="small">{op.description}</p>}
+                          {op.parameters && (
+                            <section>
+                              <h4>Parameters</h4>
+                              <JsonTree data={op.parameters} />
+                            </section>
+                          )}
+                          {op.requestBody && (
+                            <section>
+                              <h4>Request Body</h4>
+                              <JsonTree data={op.requestBody} />
+                            </section>
+                          )}
+                          {op.responses && (
+                            <section>
+                              <h4>Responses</h4>
+                              <JsonTree data={op.responses} />
+                            </section>
+                          )}
+                        </details>
+                      </li>
+                    );
+                  })}
                 </ul>
               </details>
             </li>
@@ -56,7 +100,13 @@ export default function Explorer({ data }: { data: Data }) {
         </ul>
         <details>
           <summary>Raw OpenAPI (truncated)</summary>
-          <pre>{JSON.stringify({ info: d.info, paths: d.paths, components: d.components }, null, 2)}</pre>
+          <pre>
+            {JSON.stringify(
+              { info: d.info, paths: d.paths, components: d.components },
+              null,
+              2
+            )}
+          </pre>
         </details>
       </div>
     );
