@@ -26,7 +26,9 @@ npm run dev
 - Server tries in order:
   1. **OpenAPI/Swagger**: fetches `/.well-known/openapi.json`, `/openapi.json`, `/swagger.json`, `/v1/openapi.json`.
   2. **GraphQL**: runs an **introspection query** against the given URL.
-  3. **Fallback**: makes a lightweight `GET baseUrl` and attempts to classify JSON shape (very limited in MVP).
+  3. **JSON:API** and **HAL** detectors at base URL.
+  4. **Plain REST JSON**: infers fields from an array/object and suggests item URLs.
+  5. **Fallback**: makes a lightweight `GET baseUrl` and returns a small preview.
 - Result is normalized and rendered in the UI.
 
 ### Security notes

@@ -4,11 +4,13 @@ import React, { useMemo, useState } from 'react';
 import CapabilityMatrix from './CapabilityMatrix';
 import SchemaTree from './SchemaTree';
 import GraphView from './GraphView';
+import RestView from './RestView';
 import { isOpenApi, collectOperations, buildCapabilityMatrix, resolveSchemaRef, pickPrimaryResponse } from '../lib/openapi/normalize';
 
 type Data =
   | { kind: 'openapi'; openapi?: string; swagger?: string; sourceUrl?: string; info?: any; paths?: Record<string, any>; components?: any }
   | { kind: 'graphql'; types: Array<{ name: string; kind: string }>; queryType?: string; mutationType?: string }
+  | { kind: 'rest'; resource: string; idKey?: string; fields: Array<{ name: string; type: string }>; sample: any; itemUrlTemplate?: string }
   | { kind: 'unknown'; note: string };
 
 export default function Explorer({ data }: { data: Data }) {
@@ -105,6 +107,10 @@ export default function Explorer({ data }: { data: Data }) {
         </ul>
       </div>
     );
+  }
+
+  if ((data as any).kind === 'rest') {
+    return <RestView data={data} />;
   }
 
   const u = data as any;

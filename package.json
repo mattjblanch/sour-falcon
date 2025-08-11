@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx lib/introspect/jsonapi.test.ts && tsx lib/introspect/hal.test.ts && tsx lib/introspect/util.test.ts && tsx lib/openapi/normalize.test.ts"
+    "test": "tsx lib/introspect/jsonapi.test.ts && tsx lib/introspect/hal.test.ts && tsx lib/introspect/rest.test.ts && tsx lib/introspect/util.test.ts && tsx lib/openapi/normalize.test.ts"
   },
   "dependencies": {
     "next": "14.2.4",
