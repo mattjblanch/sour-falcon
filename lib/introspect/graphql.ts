@@ -11,10 +11,10 @@ const INTROSPECTION_QUERY = `
   }
 `;
 
-export async function tryGraphQL(endpoint: string, apiKey?: string, headerName?: string) {
+export async function tryGraphQL(endpoint: string, apiKey?: string, headerName?: string, authScheme?: string) {
   try {
     const body = JSON.stringify({ query: INTROSPECTION_QUERY });
-    const headers = withAuth({ 'content-type': 'application/json' }, apiKey, headerName);
+    const headers = withAuth({ 'content-type': 'application/json' }, apiKey, headerName, authScheme);
     const res = await fetch(endpoint, { method: 'POST', headers, body });
     if (!res.ok) return { ok: false as const };
     const data = await res.json();

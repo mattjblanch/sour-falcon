@@ -7,11 +7,11 @@ const candidates = [
   '/v1/openapi.json'
 ];
 
-export async function tryOpenApi(baseUrl: string, apiKey?: string, headerName?: string) {
+export async function tryOpenApi(baseUrl: string, apiKey?: string, headerName?: string, authScheme?: string) {
   for (const path of candidates) {
     const url = new URL(path.replace(/^\/+/, '/'), baseUrl).toString();
     try {
-      const doc = await fetchJson(url, { headers: withAuth({}, apiKey, headerName) });
+      const doc = await fetchJson(url, { headers: withAuth({}, apiKey, headerName, authScheme) });
       if (doc && (doc.openapi || doc.swagger) && doc.paths) {
         return {
           ok: true as const,
