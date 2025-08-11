@@ -14,9 +14,22 @@ export async function fetchJson(url: string, init?: RequestInit, timeoutMs=8000)
   }
 }
 
-export function withAuth(headers: HeadersInit, apiKey?: string, headerName?: string): HeadersInit {
+export function withAuth(headers: HeadersInit, apiKey?: string, headerName?: string, authScheme?: string): HeadersInit {
   if (!apiKey) return headers;
   const h = new Headers(headers);
-  h.set(headerName || 'Authorization', headerName?.toLowerCase() === 'authorization' || !headerName ? `Bearer ${apiKey}` : apiKey);
+  const name = headerName || 'Authorization';
+  let value: string;
+  if (authScheme && authScheme.trim()) {
+    if (/^basic$/i.test(authScheme)) {
+      value = `Basic ${Buffer.from(apiKey).toString('base64')}`;
+    } else {
+      value = `${authScheme.trim()} ${apiKey}`.trim();
+    }
+  } else if (!headerName || headerName.toLowerCase() === 'authorization') {
+    value = `Bearer ${apiKey}`;
+  } else {
+    value = apiKey;
+  }
+  h.set(name, value);
   return h;
 }

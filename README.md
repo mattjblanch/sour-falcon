@@ -22,7 +22,7 @@ npm run dev
 
 ## How it works
 
-- Client posts `baseUrl` and `apiKey` to `/api/introspect`.
+- Client posts `baseUrl` and optional auth info (`apiKey`, `headerName`, `authScheme`) to `/api/introspect`.
 - Server tries in order:
   1. **OpenAPI/Swagger**: fetches `/.well-known/openapi.json`, `/openapi.json`, `/swagger.json`, `/v1/openapi.json`.
   2. **GraphQL**: runs an **introspection query** against the given URL.
@@ -31,7 +31,7 @@ npm run dev
 
 ### Security notes
 
-- API keys are **never logged**. In the MVP they are sent only to your serverless function and used as an `Authorization: Bearer ...` header.
+- API keys are **never logged**. In the MVP they are sent only to your serverless function and applied to requests using your chosen header and scheme (e.g. `Authorization: Bearer …`).
 - For production, prefer per‑session secrets and a denylist/allowlist of outbound domains. Do not persist user-provided keys by default.
 
 ## Project structure
@@ -44,7 +44,7 @@ api-explorer/
 │  ├─ layout.tsx                   # base layout
 │  └─ page.tsx                     # UI: form + rendered results
 ├─ components/
-│  ├─ ApiForm.tsx                  # URL/API key form
+│  ├─ ApiForm.tsx                  # URL/auth form
 │  └─ Explorer.tsx                 # renders an outline of the API shape
 ├─ lib/
 │  └─ introspect/

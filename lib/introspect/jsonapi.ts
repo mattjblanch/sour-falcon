@@ -1,8 +1,8 @@
 import { withAuth } from './util';
 
-export async function tryJsonApi(endpoint: string, apiKey?: string, headerName?: string) {
+export async function tryJsonApi(endpoint: string, apiKey?: string, headerName?: string, authScheme?: string) {
   try {
-    const res = await fetch(endpoint, { headers: withAuth({}, apiKey, headerName) });
+    const res = await fetch(endpoint, { headers: withAuth({}, apiKey, headerName, authScheme) });
     if (!res.ok) return { ok: false as const };
     const ct = res.headers.get('content-type') || '';
     if (!ct.includes('application/vnd.api+json')) return { ok: false as const };
