@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import ApiForm from "../components/ApiForm";
 import Explorer from "../components/Explorer";
+import ApiCallBuilder from "../components/ApiCallBuilder";
 import ProjectsPane, { Project } from "../components/ProjectsPane";
 
 export default function Page() {
@@ -76,6 +77,11 @@ export default function Page() {
         </button>
       )}
       <main className={`grid ${showProjects ? "with-projects" : ""}`}>
+        {lastPayload && (
+          <section className="card" style={{ gridColumn: "1 / -1" }}>
+            <ApiCallBuilder payload={lastPayload} />
+          </section>
+        )}
         {showProjects && (
           <section className="card" style={{ paddingLeft: 0 }}>
             <ProjectsPane
