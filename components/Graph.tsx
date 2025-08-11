@@ -1,9 +1,19 @@
 'use client';
 
 import React from 'react';
-import ReactFlow, { Background, Controls } from 'reactflow';
+import dynamic from 'next/dynamic';
 import type { Edge, Node } from 'reactflow';
 import 'reactflow/dist/style.css';
+
+const ReactFlow = dynamic(() => import('reactflow').then((m) => m.default), {
+  ssr: false,
+});
+const Background = dynamic(() => import('reactflow').then((m) => m.Background), {
+  ssr: false,
+});
+const Controls = dynamic(() => import('reactflow').then((m) => m.Controls), {
+  ssr: false,
+});
 
 export interface GraphOp {
   id: string;
