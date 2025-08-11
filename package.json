@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "tsx lib/introspect/jsonapi.test.ts && tsx lib/introspect/hal.test.ts"
   },
   "dependencies": {
     "next": "14.2.4",
@@ -20,6 +21,8 @@
     "@types/react-dom": "18.2.22",
     "typescript": "5.4.5",
     "eslint": "^8.57.0",
-    "eslint-config-next": "14.2.4"
+    "eslint-config-next": "14.2.4",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.7.1"
   }
 }
