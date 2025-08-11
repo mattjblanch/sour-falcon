@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
-import JsonTree from './JsonTree';
-import Graph, { GraphOp } from './Graph';
+import React, { useMemo, useState } from 'react';
+import CapabilityMatrix from './CapabilityMatrix';
 import SchemaTree from './SchemaTree';
+import GraphView from './GraphView';
+import { isOpenApi, collectOperations, buildCapabilityMatrix, resolveSchemaRef, pickPrimaryResponse } from '../lib/openapi/normalize';
 
 type Data =
   | { kind: 'openapi'; sourceUrl?: string; info?: any; paths?: Record<string, any>; components?: any }
@@ -11,148 +12,78 @@ type Data =
   | { kind: 'unknown'; note: string };
 
 export default function Explorer({ data }: { data: Data }) {
+  const isOas = data?.kind === 'openapi' && isOpenApi(data);
+  const ops = useMemo(() => (isOas ? collectOperations(data as any) : []), [data, isOas]);
+  const matrix = useMemo(() => (isOas ? buildCapabilityMatrix(ops) : {}), [ops, isOas]);
   const [showGraph, setShowGraph] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
 
-  if ((data as any).kind === "openapi") {
-    const d = data as any;
-    const paths = d.paths || {};
-    const pathEntries = Object.entries(paths as Record<string, any>);
-    const schemas = (d.components && d.components.schemas) || {};
-    const ops: GraphOp[] = pathEntries.flatMap(([path, byMethod]) =>
-      Object.entries(byMethod as Record<string, any>).map(([method, op]) => ({
-        id: `${method.toUpperCase()} ${path}`,
-        label: `${method.toUpperCase()} ${path}`,
-        cluster: op.tags?.[0] || path.split("/")[1] || "root",
-      }))
-    );
-    const endpointCount = ops.length;
-
-    function handleSelect(id: string) {
-      setSelected(id);
-      const el = document.getElementById(`op-${id}`);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }
-
-    function extractRef(obj: any): string | null {
-      if (!obj || typeof obj !== 'object') return null;
-      if (typeof obj.$ref === 'string') return obj.$ref as string;
-      for (const v of Object.values(obj)) {
-        const r = extractRef(v);
-        if (r) return r;
-      }
-      return null;
-    }
-
-    function SchemaLink({ obj }: { obj: any }) {
-      const ref = extractRef(obj);
-      if (!ref) return null;
-      const m = ref.match(/^#\/components\/schemas\/([^/]+)$/);
-      if (!m) return null;
-      const name = m[1];
-      return (
-        <p className="small">
-          Schema: <a href={`#schema-${name}`}>{name}</a>
-        </p>
-      );
-    }
+  if (isOas) {
 
     return (
       <div>
-        <p className="small">
-          Detected <b>OpenAPI</b>
-          {d.sourceUrl ? ` at ${d.sourceUrl}` : ""}
+        <p className="small">Detected <b>OpenAPI</b>{data.sourceUrl ? ` at ${data.sourceUrl}` : ''}</p>
+        <CapabilityMatrix matrix={matrix} />
+        <p style={{ marginTop: '0.5rem' }}>
+          <button onClick={() => setShowGraph(v => !v)}>{showGraph ? 'Show List' : 'Show Graph'}</button>
         </p>
-        {endpointCount >= 10 && (
-          <p>
-            <button onClick={() => setShowGraph((v) => !v)}>
-              {showGraph ? "Hide" : "Show"} Graph
-            </button>
-          </p>
+        {showGraph ? (
+          <GraphView doc={data} />
+        ) : (
+          <>
+            <h3 style={{ marginTop: '1rem' }}>Endpoints ({ops.length})</h3>
+            <div className="small">Click a card to preview schemas.</div>
+            <div style={{ display:'grid', gap:'0.75rem' }}>
+              {ops.map((op, i) => {
+                const resp = pickPrimaryResponse(op);
+                let schema: any = undefined;
+                if (resp?.content) {
+                  for (const [ct, media] of Object.entries(resp.content)) {
+                    if (ct.includes('json') && (media as any).schema) {
+                      schema = resolveSchemaRef(data, (media as any).schema);
+                      break;
+                    }
+                  }
+                }
+                let requestSchema: any = undefined;
+                const rb = (op.requestBody && (op.requestBody as any).content) || undefined;
+                if (rb) {
+                  for (const [ct, media] of Object.entries(rb)) {
+                    if (ct.includes('json') && (media as any).schema) {
+                      requestSchema = resolveSchemaRef(data, (media as any).schema);
+                      break;
+                    }
+                  }
+                }
+                const needsAuth = Array.isArray(op.security) && op.security.length > 0;
+                return (
+                  <details key={i} className="card">
+                    <summary style={{ display:'flex', gap:'.5rem', alignItems:'center', cursor:'pointer' }}>
+                      <code style={{ fontWeight:700 }}>{op.method.toUpperCase()}</code>
+                      <code>{op.path}</code>
+                      {needsAuth && <span className="small" style={{ marginLeft:'auto' }}>🔐 auth</span>}
+                    </summary>
+                    {op.summary && <p className="small" style={{ marginTop:'.5rem' }}>{op.summary}</p>}
+                    {requestSchema && (
+                      <>
+                        <h4>Request Body</h4>
+                        <SchemaTree schema={requestSchema} />
+                      </>
+                    )}
+                    {schema && (
+                      <>
+                        <h4>Response {resp?.status ? `(${resp.status})` : ''}</h4>
+                        <SchemaTree schema={schema} />
+                      </>
+                    )}
+                  </details>
+                );
+              })}
+            </div>
+          </>
         )}
-        {showGraph && <Graph ops={ops} onSelect={handleSelect} />}
-        <h3>Endpoints ({pathEntries.length})</h3>
-        <ul>
-          {pathEntries.map(([path, byMethod]) => (
-            <li key={path}>
-              <details>
-                <summary>
-                  <code>{path}</code>
-                </summary>
-                <ul>
-                  {Object.entries(byMethod as Record<string, any>).map(([method, op]) => {
-                    const opId = `${method.toUpperCase()} ${path}`;
-                    return (
-                      <li
-                        key={method}
-                        id={`op-${opId}`}
-                        style={{ background: selected === opId ? "#fffae5" : undefined }}
-                      >
-                        <details open={selected === opId}>
-                          <summary>
-                            <code>{method.toUpperCase()}</code>
-                            {op.summary ? ` ${op.summary}` : ""}
-                          </summary>
-                          {op.description && <p className="small">{op.description}</p>}
-                          {op.parameters && (
-                            <section>
-                              <h4>Parameters</h4>
-                              <JsonTree data={op.parameters} />
-                            </section>
-                          )}
-                          {op.requestBody && (
-                            <section>
-                              <h4>Request Body</h4>
-                              <SchemaLink obj={op.requestBody} />
-                              <JsonTree data={op.requestBody} />
-                            </section>
-                          )}
-                          {op.responses && (
-                            <section>
-                              <h4>Responses</h4>
-                              <ul>
-                                {Object.entries(op.responses as Record<string, any>).map(([code, resp]) => (
-                                  <li key={code}>
-                                    <details>
-                                      <summary>
-                                        <code>{code}</code>
-                                      </summary>
-                                      <SchemaLink obj={resp} />
-                                      <JsonTree data={resp} />
-                                    </details>
-                                  </li>
-                                ))}
-                              </ul>
-                            </section>
-                          )}
-                        </details>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </details>
-            </li>
-          ))}
-        </ul>
-        <h3>Schemas ({Object.keys(schemas).length})</h3>
-        <ul>
-          {Object.entries(schemas as Record<string, any>).map(([name, schema]) => (
-            <li key={name}>
-              <SchemaTree name={name} schema={schema} components={schemas} />
-            </li>
-          ))}
-        </ul>
-        <details>
+        <details style={{ marginTop:'1rem' }}>
           <summary>Raw OpenAPI (truncated)</summary>
-          <pre>
-            {JSON.stringify(
-              { info: d.info, paths: d.paths, components: d.components },
-              null,
-              2
-            )}
-          </pre>
+          <pre>{JSON.stringify({ info: data.info, paths: data.paths, components: data.components }, null, 2)}</pre>
         </details>
       </div>
     );
