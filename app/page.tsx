@@ -77,7 +77,7 @@ export default function Page() {
       )}
       <main className={`grid ${showProjects ? "with-projects" : ""}`}>
         {showProjects && (
-          <section className="card">
+          <section className="card" style={{ paddingLeft: 0 }}>
             <ProjectsPane
               projects={projects}
               onSelect={handleSelectProject}
