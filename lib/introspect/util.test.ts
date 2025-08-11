@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { withAuth } from './util.ts';
+import { withAuth, withQuery } from './util.ts';
 
 test('adds Bearer scheme by default', () => {
   const h = new Headers(withAuth({}, 'secret'));
@@ -17,4 +17,9 @@ test('supports Basic scheme', () => {
 test('supports custom scheme and header', () => {
   const h = new Headers(withAuth({}, 't', 'X-API-Key', 'Token'));
   assert.equal(h.get('X-API-Key'), 'Token t');
+});
+
+test('appends API key to query', () => {
+  const url = withQuery('https://example.com/data', 'abc', 'api_key');
+  assert.equal(url, 'https://example.com/data?api_key=abc');
 });

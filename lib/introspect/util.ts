@@ -33,3 +33,10 @@ export function withAuth(headers: HeadersInit, apiKey?: string, headerName?: str
   h.set(name, value);
   return h;
 }
+
+export function withQuery(url: string, apiKey?: string, queryName = 'key'): string {
+  if (!apiKey) return url;
+  const u = new URL(url);
+  u.searchParams.append(queryName || 'key', apiKey);
+  return u.toString();
+}

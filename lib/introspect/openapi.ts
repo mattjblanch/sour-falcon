@@ -1,4 +1,4 @@
-import { fetchJson, withAuth } from './util';
+import { fetchJson, withAuth, withQuery } from './util';
 
 const candidates = [
   '/.well-known/openapi.json',
@@ -7,16 +7,27 @@ const candidates = [
   '/v1/openapi.json'
 ];
 
-export async function tryOpenApi(baseUrl: string, apiKey?: string, headerName?: string, authScheme?: string) {
+export async function tryOpenApi(baseUrl: string, apiKey?: string, headerName?: string, authScheme?: string, authMethod?: string, queryName?: string) {
   for (const path of candidates) {
-    const url = new URL(path.replace(/^\/+/, '/'), baseUrl).toString();
+    let url = new URL(path.replace(/^\/+/, '/'), baseUrl).toString();
     try {
-      const doc = await fetchJson(url, { headers: withAuth({}, apiKey, headerName, authScheme) });
-      if (doc && (doc.openapi || doc.swagger) && doc.paths) {
-        return {
-          ok: true as const,
-          data: { kind: 'openapi', sourceUrl: url, info: doc.info, paths: doc.paths, components: doc.components }
-        };
+      if (authMethod === 'query') {
+        url = withQuery(url, apiKey, queryName);
+        const doc = await fetchJson(url);
+        if (doc && (doc.openapi || doc.swagger) && doc.paths) {
+          return {
+            ok: true as const,
+            data: { kind: 'openapi', sourceUrl: url, info: doc.info, paths: doc.paths, components: doc.components }
+          };
+        }
+      } else {
+        const doc = await fetchJson(url, { headers: withAuth({}, apiKey, headerName, authScheme) });
+        if (doc && (doc.openapi || doc.swagger) && doc.paths) {
+          return {
+            ok: true as const,
+            data: { kind: 'openapi', sourceUrl: url, info: doc.info, paths: doc.paths, components: doc.components }
+          };
+        }
       }
     } catch { /* continue */ }
   }
