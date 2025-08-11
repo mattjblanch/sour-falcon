@@ -33,7 +33,7 @@ export default function ApiCallBuilder({ payload, endpoint }: { payload: Payload
   const [method, setMethod] = useState(endpoint?.method || "GET");
   const [url, setUrl] = useState("");
   const [sending, setSending] = useState(false);
-  const [response, setResponse] = useState<string>("");
+  const [response, setResponse] = useState<any>(null);
 
   useEffect(() => {
     if (endpoint?.method) setMethod(endpoint.method);
@@ -47,7 +47,7 @@ export default function ApiCallBuilder({ payload, endpoint }: { payload: Payload
 
   async function handleSend() {
     setSending(true);
-    setResponse("");
+    setResponse(null);
     try {
       const headers: Record<string, string> = {};
       if (
@@ -62,13 +62,69 @@ export default function ApiCallBuilder({ payload, endpoint }: { payload: Payload
         headers[payload.headerName] = value;
       }
       const res = await fetch(url, { method, headers });
-      const text = await res.text();
-      setResponse(text);
+      const ct = res.headers.get("content-type") || "";
+      const body = ct.includes("json") ? await res.json() : await res.text();
+      setResponse(body);
     } catch (e: any) {
       setResponse(String(e));
     } finally {
       setSending(false);
     }
+  }
+
+  function renderValue(val: any): React.ReactNode {
+    if (Array.isArray(val)) {
+      if (val.every((v) => v && typeof v === "object" && !Array.isArray(v))) {
+        const keys = Array.from(
+          new Set(val.flatMap((v) => Object.keys(v)))
+        );
+        return (
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead>
+                <tr>
+                  {keys.map((k) => (
+                    <th key={k}>{k}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {val.map((row, i) => (
+                  <tr key={i}>
+                    {keys.map((k) => (
+                      <td key={k}>{formatCell((row as any)[k])}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+      return <pre>{JSON.stringify(val, null, 2)}</pre>;
+    }
+    if (val && typeof val === "object") {
+      return (
+        <table>
+          <tbody>
+            {Object.entries(val).map(([k, v]) => (
+              <tr key={k}>
+                <th style={{ textAlign: "left", verticalAlign: "top" }}>{k}</th>
+                <td>{formatCell(v)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    }
+    return <pre>{String(val)}</pre>;
+  }
+
+  function formatCell(v: any): React.ReactNode {
+    if (v && typeof v === "object") {
+      return <pre>{JSON.stringify(v, null, 2)}</pre>;
+    }
+    return String(v ?? "");
   }
 
   return (
@@ -106,10 +162,22 @@ export default function ApiCallBuilder({ payload, endpoint }: { payload: Payload
           {sending ? "Sending..." : "Send"}
         </button>
       </div>
-      {response && (
-        <pre style={{ marginTop: ".5rem", maxHeight: "20rem", overflow: "auto" }}>
-          {response}
-        </pre>
+      {response !== null && (
+        typeof response === "string" ? (
+          <pre
+            style={{ marginTop: ".5rem", maxHeight: "20rem", overflow: "auto" }}
+          >
+            {response}
+          </pre>
+        ) : (
+          <div style={{ marginTop: ".5rem" }}>
+            {renderValue(response)}
+            <details style={{ marginTop: ".5rem" }}>
+              <summary>Raw response</summary>
+              <pre>{JSON.stringify(response, null, 2)}</pre>
+            </details>
+          </div>
+        )
       )}
     </>
   );
