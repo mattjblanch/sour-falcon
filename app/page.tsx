@@ -12,6 +12,7 @@ export default function Page() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [showProjects, setShowProjects] = useState(true);
   const [lastPayload, setLastPayload] = useState<any | null>(null);
+  const [selectedEndpoint, setSelectedEndpoint] = useState<{ method: string; path: string } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -41,6 +42,7 @@ export default function Page() {
   function handleSelectProject(p: Project) {
     setResult(p.result);
     setShowProjects(false);
+    setSelectedEndpoint(null);
     if (p.payload) {
       setLastPayload(p.payload);
     } else if (p.baseUrl) {
@@ -49,7 +51,7 @@ export default function Page() {
   }
 
   async function onSubmit(payload: { baseUrl: string; apiKey?: string; headerName?: string; authScheme?: string; authMethod?: string; queryName?: string; useAuth?: boolean; authType?: string; customScheme?: string }) {
-    setLoading(true); setError(null); setResult(null); setLastPayload(payload);
+    setLoading(true); setError(null); setResult(null); setLastPayload(payload); setSelectedEndpoint(null);
     try {
       const res = await fetch('/api/introspect', {
         method: 'POST',
@@ -79,7 +81,7 @@ export default function Page() {
       <main className={`grid ${showProjects ? "with-projects" : ""}`}>
         {lastPayload && (
           <section className="card" style={{ gridColumn: "1 / -1" }}>
-            <ApiCallBuilder payload={lastPayload} />
+            <ApiCallBuilder payload={lastPayload} endpoint={selectedEndpoint || undefined} />
           </section>
         )}
         {showProjects && (
@@ -108,7 +110,7 @@ export default function Page() {
               <button onClick={handleSaveProject} style={{ width: "auto", marginBottom: ".5rem" }}>
                 Save Project
               </button>
-              <Explorer data={result} />
+              <Explorer data={result} onSelectEndpoint={(m, p) => setSelectedEndpoint({ method: m, path: p })} />
             </>
           )}
           {!loading && !error && !result && <p className="small">Results will appear here.</p>}
