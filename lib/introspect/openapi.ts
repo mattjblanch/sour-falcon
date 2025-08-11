@@ -17,7 +17,15 @@ export async function tryOpenApi(baseUrl: string, apiKey?: string, headerName?: 
         if (doc && (doc.openapi || doc.swagger) && doc.paths) {
           return {
             ok: true as const,
-            data: { kind: 'openapi', sourceUrl: url, info: doc.info, paths: doc.paths, components: doc.components }
+            data: {
+              kind: 'openapi',
+              sourceUrl: url,
+              info: doc.info,
+              paths: doc.paths,
+              components: doc.components,
+              openapi: doc.openapi,
+              swagger: doc.swagger
+            }
           };
         }
       } else {
@@ -25,7 +33,15 @@ export async function tryOpenApi(baseUrl: string, apiKey?: string, headerName?: 
         if (doc && (doc.openapi || doc.swagger) && doc.paths) {
           return {
             ok: true as const,
-            data: { kind: 'openapi', sourceUrl: url, info: doc.info, paths: doc.paths, components: doc.components }
+            data: {
+              kind: 'openapi',
+              sourceUrl: url,
+              info: doc.info,
+              paths: doc.paths,
+              components: doc.components,
+              openapi: doc.openapi,
+              swagger: doc.swagger
+            }
           };
         }
       }

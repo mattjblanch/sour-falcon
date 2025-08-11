@@ -7,7 +7,7 @@ import GraphView from './GraphView';
 import { isOpenApi, collectOperations, buildCapabilityMatrix, resolveSchemaRef, pickPrimaryResponse } from '../lib/openapi/normalize';
 
 type Data =
-  | { kind: 'openapi'; sourceUrl?: string; info?: any; paths?: Record<string, any>; components?: any }
+  | { kind: 'openapi'; openapi?: string; swagger?: string; sourceUrl?: string; info?: any; paths?: Record<string, any>; components?: any }
   | { kind: 'graphql'; types: Array<{ name: string; kind: string }>; queryType?: string; mutationType?: string }
   | { kind: 'unknown'; note: string };
 
