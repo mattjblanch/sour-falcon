@@ -31,7 +31,7 @@ export default function Page() {
     if (!name) return;
     const newList = [
       ...projects.filter((p) => p.name !== name),
-      { name, result, baseUrl: lastPayload?.baseUrl },
+      { name, result, baseUrl: lastPayload?.baseUrl, payload: lastPayload },
     ];
     setProjects(newList);
     persist(newList);
@@ -40,9 +40,14 @@ export default function Page() {
   function handleSelectProject(p: Project) {
     setResult(p.result);
     setShowProjects(false);
+    if (p.payload) {
+      setLastPayload(p.payload);
+    } else if (p.baseUrl) {
+      setLastPayload({ baseUrl: p.baseUrl });
+    }
   }
 
-  async function onSubmit(payload: { baseUrl: string; apiKey?: string; headerName?: string; authScheme?: string; authMethod?: string; queryName?: string }) {
+  async function onSubmit(payload: { baseUrl: string; apiKey?: string; headerName?: string; authScheme?: string; authMethod?: string; queryName?: string; useAuth?: boolean; authType?: string; customScheme?: string }) {
     setLoading(true); setError(null); setResult(null); setLastPayload(payload);
     try {
       const res = await fetch('/api/introspect', {
@@ -86,7 +91,7 @@ export default function Page() {
             Enter a base URL (OpenAPI/Swagger, GraphQL, or a JSON API). Optional API key is sent using your chosen header or query
             parameter.
           </p>
-          <ApiForm onSubmit={onSubmit} disabled={loading} />
+          <ApiForm onSubmit={onSubmit} disabled={loading} initial={lastPayload || undefined} />
         </section>
         <section className="card">
           <h2>Result</h2>
