@@ -10,11 +10,35 @@ function isObject(value: any) {
 }
 
 export default function JsonTree({ data, name }: JsonTreeProps) {
+  if (isObject(data) && typeof (data as any).$ref === 'string') {
+    const ref = (data as any).$ref as string;
+    const m = ref.match(/^#\/components\/schemas\/([^/]+)$/);
+    if (m) {
+      const refName = m[1];
+      return (
+        <span>
+          {name ? (
+            <>
+              <b>{name}</b>: <a href={`#schema-${refName}`}>{refName}</a>
+            </>
+          ) : (
+            <a href={`#schema-${refName}`}>{refName}</a>
+          )}
+        </span>
+      );
+    }
+  }
+
   if (!isObject(data)) {
     return (
       <span>
-        {name ? <><b>{name}</b>: </> : null}
-        <code>{JSON.stringify(data)}</code>
+        {name ? (
+          <>
+            <b>{name}</b>: <code>{JSON.stringify(data)}</code>
+          </>
+        ) : (
+          <code>{JSON.stringify(data)}</code>
+        )}
       </span>
     );
   }
