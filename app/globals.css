@@ -16,13 +16,13 @@ pre { overflow: auto; background: rgba(0,0,0,.04); padding: .75rem; border-radiu
 .grid { 
   display: grid; 
   gap: 1rem; 
-  grid-template-columns: repeat(2, minmax(0, 1fr)); 
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   align-items: start;
 }
 
 /* Projects | Explorer | Result */
-.grid.with-projects { 
-  grid-template-columns: 260px 360px minmax(0, 1fr);
+.grid.with-projects {
+  grid-template-columns: 260px minmax(0, 1fr) minmax(0, 2fr);
 }
 
 /* Collapse on smaller screens */
