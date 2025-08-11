@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import JsonTree from './JsonTree';
 import Graph, { GraphOp } from './Graph';
+import SchemaTree from './SchemaTree';
 
 type Data =
   | { kind: 'openapi'; sourceUrl?: string; info?: any; paths?: Record<string, any>; components?: any }
@@ -17,6 +18,7 @@ export default function Explorer({ data }: { data: Data }) {
     const d = data as any;
     const paths = d.paths || {};
     const pathEntries = Object.entries(paths as Record<string, any>);
+    const schemas = (d.components && d.components.schemas) || {};
     const ops: GraphOp[] = pathEntries.flatMap(([path, byMethod]) =>
       Object.entries(byMethod as Record<string, any>).map(([method, op]) => ({
         id: `${method.toUpperCase()} ${path}`,
@@ -32,6 +34,29 @@ export default function Explorer({ data }: { data: Data }) {
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
       }
+    }
+
+    function extractRef(obj: any): string | null {
+      if (!obj || typeof obj !== 'object') return null;
+      if (typeof obj.$ref === 'string') return obj.$ref as string;
+      for (const v of Object.values(obj)) {
+        const r = extractRef(v);
+        if (r) return r;
+      }
+      return null;
+    }
+
+    function SchemaLink({ obj }: { obj: any }) {
+      const ref = extractRef(obj);
+      if (!ref) return null;
+      const m = ref.match(/^#\/components\/schemas\/([^/]+)$/);
+      if (!m) return null;
+      const name = m[1];
+      return (
+        <p className="small">
+          Schema: <a href={`#schema-${name}`}>{name}</a>
+        </p>
+      );
     }
 
     return (
@@ -80,13 +105,26 @@ export default function Explorer({ data }: { data: Data }) {
                           {op.requestBody && (
                             <section>
                               <h4>Request Body</h4>
+                              <SchemaLink obj={op.requestBody} />
                               <JsonTree data={op.requestBody} />
                             </section>
                           )}
                           {op.responses && (
                             <section>
                               <h4>Responses</h4>
-                              <JsonTree data={op.responses} />
+                              <ul>
+                                {Object.entries(op.responses as Record<string, any>).map(([code, resp]) => (
+                                  <li key={code}>
+                                    <details>
+                                      <summary>
+                                        <code>{code}</code>
+                                      </summary>
+                                      <SchemaLink obj={resp} />
+                                      <JsonTree data={resp} />
+                                    </details>
+                                  </li>
+                                ))}
+                              </ul>
                             </section>
                           )}
                         </details>
@@ -95,6 +133,14 @@ export default function Explorer({ data }: { data: Data }) {
                   })}
                 </ul>
               </details>
+            </li>
+          ))}
+        </ul>
+        <h3>Schemas ({Object.keys(schemas).length})</h3>
+        <ul>
+          {Object.entries(schemas as Record<string, any>).map(([name, schema]) => (
+            <li key={name}>
+              <SchemaTree name={name} schema={schema} components={schemas} />
             </li>
           ))}
         </ul>
