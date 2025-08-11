@@ -1,7 +1,19 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 
-export default function ApiForm({ onSubmit, disabled }:{ onSubmit:(p:{baseUrl:string; apiKey?: string; headerName?: string; authScheme?: string; authMethod?: string; queryName?: string})=>void; disabled?:boolean;}) {
+type Payload = {
+  baseUrl: string;
+  apiKey?: string;
+  headerName?: string;
+  authScheme?: string;
+  authMethod?: string;
+  queryName?: string;
+  useAuth?: boolean;
+  authType?: string;
+  customScheme?: string;
+};
+
+export default function ApiForm({ onSubmit, disabled, initial }:{ onSubmit:(p:Payload)=>void; disabled?:boolean; initial?:Payload;}) {
   const [baseUrl, setBaseUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [useAuth, setUseAuth] = useState(false);
@@ -13,6 +25,10 @@ export default function ApiForm({ onSubmit, disabled }:{ onSubmit:(p:{baseUrl:st
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const bu = localStorage.getItem('baseUrl');
+    if (bu) setBaseUrl(bu);
+    const ak = localStorage.getItem('apiKey');
+    if (ak) setApiKey(ak);
     const am = localStorage.getItem('authMethod');
     if (am) setAuthMethod(am);
     const hn = localStorage.getItem('headerName');
@@ -26,6 +42,27 @@ export default function ApiForm({ onSubmit, disabled }:{ onSubmit:(p:{baseUrl:st
     const ua = localStorage.getItem('useAuth');
     if (ua) setUseAuth(ua === 'true');
   }, []);
+
+  useEffect(() => {
+    if (!initial) return;
+    setBaseUrl(initial.baseUrl || '');
+    setUseAuth(Boolean(initial.useAuth));
+    setApiKey(initial.apiKey || '');
+    if (initial.authMethod) setAuthMethod(initial.authMethod);
+    if (initial.headerName) setHeaderName(initial.headerName);
+    if (initial.queryName) setQueryName(initial.queryName);
+    if (initial.authType) {
+      setAuthType(initial.authType);
+      if (initial.authType === 'Custom') setCustomScheme(initial.customScheme || '');
+    } else if (initial.authScheme) {
+      if (initial.authScheme === 'Bearer' || initial.authScheme === 'Basic') {
+        setAuthType(initial.authScheme);
+      } else {
+        setAuthType('Custom');
+        setCustomScheme(initial.authScheme);
+      }
+    }
+  }, [initial]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -54,18 +91,28 @@ export default function ApiForm({ onSubmit, disabled }:{ onSubmit:(p:{baseUrl:st
     if (typeof window !== 'undefined') localStorage.setItem('useAuth', String(useAuth));
   }, [useAuth]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') localStorage.setItem('baseUrl', baseUrl);
+  }, [baseUrl]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') localStorage.setItem('apiKey', apiKey);
+  }, [apiKey]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     let url = baseUrl.trim();
     if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
     const scheme = authType === 'Custom' ? customScheme.trim() : authType;
-    const payload: any = { baseUrl: url };
+    const payload: Payload = { baseUrl: url, useAuth };
     if (useAuth) {
       payload.apiKey = apiKey.trim() || undefined;
       payload.authMethod = authMethod;
       if (authMethod === 'header') {
         payload.headerName = headerName.trim() || undefined;
         payload.authScheme = scheme.trim() || undefined;
+        payload.authType = authType;
+        if (authType === 'Custom') payload.customScheme = customScheme.trim() || undefined;
       } else if (authMethod === 'query') {
         payload.queryName = queryName.trim() || undefined;
       }
