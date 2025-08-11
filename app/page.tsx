@@ -8,7 +8,7 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function onSubmit(payload: { baseUrl: string; apiKey?: string; headerName?: string; authScheme?: string }) {
+  async function onSubmit(payload: { baseUrl: string; apiKey?: string; headerName?: string; authScheme?: string; authMethod?: string; queryName?: string }) {
     setLoading(true); setError(null); setResult(null);
     try {
       const res = await fetch('/api/introspect', {
@@ -33,7 +33,7 @@ export default function Page() {
     <main className="grid">
       <section className="card">
         <h1>API Explorer</h1>
-        <p className="small">Enter a base URL (OpenAPI/Swagger, GraphQL, or a JSON API). Optional API key is sent using your chosen header and scheme.</p>
+        <p className="small">Enter a base URL (OpenAPI/Swagger, GraphQL, or a JSON API). Optional API key is sent using your chosen header or query parameter.</p>
         <ApiForm onSubmit={onSubmit} disabled={loading} />
       </section>
       <section className="card">

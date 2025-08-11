@@ -1,4 +1,4 @@
-import { fetchJson, withAuth } from './util';
+import { withAuth, withQuery } from './util';
 
 // Minimal introspection query (shortened variant)
 const INTROSPECTION_QUERY = `
@@ -11,11 +11,17 @@ const INTROSPECTION_QUERY = `
   }
 `;
 
-export async function tryGraphQL(endpoint: string, apiKey?: string, headerName?: string, authScheme?: string) {
+export async function tryGraphQL(endpoint: string, apiKey?: string, headerName?: string, authScheme?: string, authMethod?: string, queryName?: string) {
   try {
     const body = JSON.stringify({ query: INTROSPECTION_QUERY });
-    const headers = withAuth({ 'content-type': 'application/json' }, apiKey, headerName, authScheme);
-    const res = await fetch(endpoint, { method: 'POST', headers, body });
+    let url = endpoint;
+    let headers: HeadersInit = { 'content-type': 'application/json' };
+    if (authMethod === 'query') {
+      url = withQuery(url, apiKey, queryName);
+    } else {
+      headers = withAuth(headers, apiKey, headerName, authScheme);
+    }
+    const res = await fetch(url, { method: 'POST', headers, body });
     if (!res.ok) return { ok: false as const };
     const data = await res.json();
     if (data?.data?.__schema) {

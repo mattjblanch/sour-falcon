@@ -1,22 +1,33 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 
-export default function ApiForm({ onSubmit, disabled }:{ onSubmit:(p:{baseUrl:string; apiKey?: string; headerName?: string; authScheme?: string})=>void; disabled?:boolean;}) {
+export default function ApiForm({ onSubmit, disabled }:{ onSubmit:(p:{baseUrl:string; apiKey?: string; headerName?: string; authScheme?: string; authMethod?: string; queryName?: string})=>void; disabled?:boolean;}) {
   const [baseUrl, setBaseUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [authMethod, setAuthMethod] = useState('header');
   const [headerName, setHeaderName] = useState('Authorization');
   const [authType, setAuthType] = useState('Bearer');
   const [customScheme, setCustomScheme] = useState('');
+  const [queryName, setQueryName] = useState('key');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const am = localStorage.getItem('authMethod');
+    if (am) setAuthMethod(am);
     const hn = localStorage.getItem('headerName');
     if (hn) setHeaderName(hn);
     const at = localStorage.getItem('authType');
     if (at) setAuthType(at);
     const cs = localStorage.getItem('customScheme');
     if (cs) setCustomScheme(cs);
+    const qn = localStorage.getItem('queryName');
+    if (qn) setQueryName(qn);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('authMethod', authMethod);
+  }, [authMethod]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') localStorage.setItem('headerName', headerName);
@@ -32,16 +43,27 @@ export default function ApiForm({ onSubmit, disabled }:{ onSubmit:(p:{baseUrl:st
     }
   }, [authType, customScheme]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') localStorage.setItem('queryName', queryName);
+  }, [queryName]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     let url = baseUrl.trim();
     if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
     const scheme = authType === 'Custom' ? customScheme.trim() : authType;
-    onSubmit({ baseUrl: url, apiKey: apiKey.trim() || undefined, headerName: headerName.trim() || undefined, authScheme: scheme.trim() || undefined });
+    const payload: any = { baseUrl: url, apiKey: apiKey.trim() || undefined, authMethod };
+    if (authMethod === 'header') {
+      payload.headerName = headerName.trim() || undefined;
+      payload.authScheme = scheme.trim() || undefined;
+    } else if (authMethod === 'query') {
+      payload.queryName = queryName.trim() || undefined;
+    }
+    onSubmit(payload);
   }
 
   const schemeDisplay = authType === 'Custom' ? customScheme : authType;
-  const placeholder = schemeDisplay ? `Will be sent as ${schemeDisplay} token` : 'API key';
+  const placeholder = authMethod === 'header' && schemeDisplay ? `Will be sent as ${schemeDisplay} token` : 'API key';
 
   return (
     <form onSubmit={handleSubmit}>
@@ -49,16 +71,31 @@ export default function ApiForm({ onSubmit, disabled }:{ onSubmit:(p:{baseUrl:st
       <input required placeholder="https://api.example.com" value={baseUrl} onChange={e=>setBaseUrl(e.target.value)} />
       <label>API Key (optional)</label>
       <input type="password" placeholder={placeholder} autoComplete="off" value={apiKey} onChange={e=>setApiKey(e.target.value)} />
-      <label>Header Name</label>
-      <input placeholder="Authorization" value={headerName} onChange={e=>setHeaderName(e.target.value)} />
-      <label>Token Scheme</label>
-      <select value={authType} onChange={e=>setAuthType(e.target.value)}>
-        <option value="Bearer">Bearer</option>
-        <option value="Basic">Basic</option>
-        <option value="Custom">Custom</option>
+      <label>Auth Method</label>
+      <select value={authMethod} onChange={e=>setAuthMethod(e.target.value)}>
+        <option value="header">Header</option>
+        <option value="query">Query param</option>
       </select>
-      {authType === 'Custom' && (
-        <input placeholder="Scheme" value={customScheme} onChange={e=>setCustomScheme(e.target.value)} />
+      {authMethod === 'header' && (
+        <>
+          <label>Header Name</label>
+          <input placeholder="Authorization" value={headerName} onChange={e=>setHeaderName(e.target.value)} />
+          <label>Token Scheme</label>
+          <select value={authType} onChange={e=>setAuthType(e.target.value)}>
+            <option value="Bearer">Bearer</option>
+            <option value="Basic">Basic</option>
+            <option value="Custom">Custom</option>
+          </select>
+          {authType === 'Custom' && (
+            <input placeholder="Scheme" value={customScheme} onChange={e=>setCustomScheme(e.target.value)} />
+          )}
+        </>
+      )}
+      {authMethod === 'query' && (
+        <>
+          <label>Query key name</label>
+          <input placeholder="key" value={queryName} onChange={e=>setQueryName(e.target.value)} />
+        </>
       )}
       <button disabled={disabled} type="submit">Explore</button>
     </form>

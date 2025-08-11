@@ -22,7 +22,7 @@ npm run dev
 
 ## How it works
 
-- Client posts `baseUrl` and optional auth info (`apiKey`, `headerName`, `authScheme`) to `/api/introspect`.
+- Client posts `baseUrl` and optional auth info (`apiKey`, `headerName`, `authScheme`, `authMethod`, `queryName`) to `/api/introspect`.
 - Server tries in order:
   1. **OpenAPI/Swagger**: fetches `/.well-known/openapi.json`, `/openapi.json`, `/swagger.json`, `/v1/openapi.json`.
   2. **GraphQL**: runs an **introspection query** against the given URL.
@@ -31,7 +31,7 @@ npm run dev
 
 ### Security notes
 
-- API keys are **never logged**. In the MVP they are sent only to your serverless function and applied to requests using your chosen header and scheme (e.g. `Authorization: Bearer …`).
+- API keys are **never logged**. In the MVP they are sent only to your serverless function and applied to requests using your chosen header/scheme or query parameter.
 - For production, prefer per‑session secrets and a denylist/allowlist of outbound domains. Do not persist user-provided keys by default.
 
 ## Project structure
@@ -66,7 +66,7 @@ api-explorer/
 
 - [ ] Render an interactive **endpoint -> schema** tree.
 - [ ] Add simple **graph view** (React Flow or Cytoscape).
-- [ ] Support **API-key-in-query** and **custom header** schemes.
+- [x] Support **API-key-in-query** and **custom header** schemes.
 - [ ] Cache introspection results (LRU) to reduce outbound calls.
 - [ ] Add **rate limiting** and target allowlist for the proxy.
 - [ ] Add **JSON:API** and **HAL** detectors.
