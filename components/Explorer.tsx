@@ -13,7 +13,7 @@ type Data =
   | { kind: 'rest'; resource: string; idKey?: string; fields: Array<{ name: string; type: string }>; sample: any; itemUrlTemplate?: string }
   | { kind: 'unknown'; note: string };
 
-export default function Explorer({ data }: { data: Data }) {
+export default function Explorer({ data, onSelectEndpoint }: { data: Data; onSelectEndpoint?: (method: string, path: string) => void }) {
   const isOas = data?.kind === 'openapi' && isOpenApi(data);
   const ops = useMemo(() => (isOas ? collectOperations(data as any) : []), [data, isOas]);
   const matrix = useMemo(() => (isOas ? buildCapabilityMatrix(ops) : {}), [ops, isOas]);
@@ -64,6 +64,11 @@ export default function Explorer({ data }: { data: Data }) {
                       <code>{op.path}</code>
                       {needsAuth && <span className="small" style={{ marginLeft:'auto' }}>🔐 auth</span>}
                     </summary>
+                    <p style={{ marginTop: '.5rem' }}>
+                      <button style={{ width: 'auto' }} onClick={() => onSelectEndpoint?.(op.method.toUpperCase(), op.path)}>
+                        Use in API Call Builder
+                      </button>
+                    </p>
                     {op.summary && <p className="small" style={{ marginTop:'.5rem' }}>{op.summary}</p>}
                     {requestSchema && (
                       <>
