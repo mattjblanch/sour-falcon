@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { tryOpenApi } from '../../../lib/introspect/openapi';
 import { tryGraphQL } from '../../../lib/introspect/graphql';
+import { tryJsonApi } from '../../../lib/introspect/jsonapi';
+import { tryHal } from '../../../lib/introspect/hal';
 import { withAuth } from '../../../lib/introspect/util';
 
 function sanitizeUrl(url: string) {
@@ -22,6 +24,14 @@ export async function POST(req: NextRequest) {
     // Try GraphQL at the same endpoint
     const gql = await tryGraphQL(url, apiKey, headerName);
     if (gql.ok) return NextResponse.json(gql.data);
+
+    // Try JSON:API at base URL
+    const ja = await tryJsonApi(url, apiKey, headerName);
+    if (ja.ok) return NextResponse.json(ja.data);
+
+    // Try HAL at base URL
+    const hal = await tryHal(url, apiKey, headerName);
+    if (hal.ok) return NextResponse.json(hal.data);
 
     // Fallback: fetch base URL and return small preview (no guessing yet)
     try {
