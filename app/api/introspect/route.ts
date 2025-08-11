@@ -3,6 +3,7 @@ import { tryOpenApi } from '../../../lib/introspect/openapi';
 import { tryGraphQL } from '../../../lib/introspect/graphql';
 import { tryJsonApi } from '../../../lib/introspect/jsonapi';
 import { tryHal } from '../../../lib/introspect/hal';
+import { tryRest } from '../../../lib/introspect/rest';
 import { withAuth, withQuery } from '../../../lib/introspect/util';
 
 function sanitizeUrl(url: string) {
@@ -32,6 +33,10 @@ export async function POST(req: NextRequest) {
     // Try HAL at base URL
     const hal = await tryHal(url, apiKey, headerName, authScheme, authMethod, queryName);
     if (hal.ok) return NextResponse.json(hal.data);
+
+    // Try plain REST JSON at base URL
+    const rest = await tryRest(url, apiKey, headerName, authScheme, authMethod, queryName);
+    if (rest.ok) return NextResponse.json(rest.data);
 
     // Fallback: fetch base URL and return small preview (no guessing yet)
     try {
